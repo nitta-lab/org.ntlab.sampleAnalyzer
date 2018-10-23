@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.ntlab.traceAnalysisPlatform.additionalClasspaths">
+      <classpath
+            class="org.ntlab.sampleanalyzer.analyzerProvider.SampleAnalyzerLaunchConfiguration">
+      </classpath>
+   </extension>
+   <extension
+         point="org.eclipse.ui.actionSets">
+      <actionSet
+            id="org.ntlab.sampleAnalyzer.actionSet"
+            label="Sample Analyze"
+            visible="true">
+         <action
+               class="org.ntlab.sampleanalyzer.SampleAnalyzeAction"
+               id="org.ntlab.sampleanalyzer.SampleAnalyzeAction"
+               label="Sample Analyze"
+               style="push"
+               toolbarPath="traceAnalyzerGroup">
+         </action>
+      </actionSet>
+   </extension>
+
+</plugin>

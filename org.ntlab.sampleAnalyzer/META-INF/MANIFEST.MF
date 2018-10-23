@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: SampleAnalyzer
+Bundle-SymbolicName: org.ntlab.sampleAnalyzer;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: org.ntlab.sampleanalyzer.Activator
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.debug.core,
+ org.eclipse.jdt.debug,
+ org.eclipse.jdt.core,
+ org.ntlab.traceAnalysisPlatform;bundle-version="1.0.0"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-ActivationPolicy: lazy
