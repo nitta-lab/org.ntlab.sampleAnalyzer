@@ -11,7 +11,7 @@ public class SampleAnalyzerLaunchConfiguration implements IAdditionalLaunchConfi
 	public static final String ANALYZER_PATH = "org/ntlab/sampleanalyzer/analyzerProvider/SampleAnalyzer.class";
 	public static final String ANALYZER_PACKAGE = "org.ntlab.sampleanalyzer.analyzerProvider";
 	public static final String ANALYZER_CLASS = "SampleAnalyzer";
-	public static final String TRACE = "org.ntlab.traceCollector.tracer.trace";
+	public static final String TRACE = "org.ntlab.traceAnalysisPlatform.tracer.trace";
 	
 	@Override
 	public String[] getAdditionalClasspath() {
