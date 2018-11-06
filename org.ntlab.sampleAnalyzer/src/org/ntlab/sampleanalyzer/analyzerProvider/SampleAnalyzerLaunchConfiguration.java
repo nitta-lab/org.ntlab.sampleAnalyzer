@@ -14,7 +14,7 @@ public class SampleAnalyzerLaunchConfiguration implements IAdditionalLaunchConfi
 	public static final String TRACE = "org.ntlab.traceAnalysisPlatform.tracer.trace";
 	
 	@Override
-	public String[] getAdditionalClasspath() {
+	public String[] getAdditionalClasspaths() {
 		try {
 			List<String> classPathList = new ArrayList<>();
 			String analyzerClassPath = FileLocator.resolve(this.getClass().getClassLoader().getResource(ANALYZER_PATH)).getPath();
