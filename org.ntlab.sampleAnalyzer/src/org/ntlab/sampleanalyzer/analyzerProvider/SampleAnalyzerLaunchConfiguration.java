@@ -18,8 +18,8 @@ public class SampleAnalyzerLaunchConfiguration implements IAdditionalLaunchConfi
 		try {
 			List<String> classPathList = new ArrayList<>();
 			String analyzerClassPath = FileLocator.resolve(this.getClass().getClassLoader().getResource(ANALYZER_PATH)).getPath();
-			String classPath = analyzerClassPath.substring(1, analyzerClassPath.length() - ANALYZER_PATH.length());
-			classPathList.add(classPath);			
+			String classPath = analyzerClassPath.substring(0, analyzerClassPath.length() - ANALYZER_PATH.length());
+			classPathList.add(classPath);
 			return classPathList.toArray(new String[classPathList.size()]);
 		} catch (IOException e) {
 			e.printStackTrace();
