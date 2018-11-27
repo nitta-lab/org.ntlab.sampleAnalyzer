@@ -16,6 +16,7 @@ import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 
+@SuppressWarnings("restriction")
 public class JDIStaticMethodCaller {
 	protected VirtualMachine vm;
 	protected ThreadReference thread;
@@ -38,7 +39,7 @@ public class JDIStaticMethodCaller {
 		List<Method> methodsByName = type.methodsByName("getId");
 		List<Value> argList = new ArrayList<>();
 		try {
-			return ((LongValue)thread.invokeMethod(thread, methodsByName.get(0), argList, thread.INVOKE_SINGLE_THREADED)).value();
+			return ((LongValue)thread.invokeMethod(thread, methodsByName.get(0), argList, ThreadReference.INVOKE_SINGLE_THREADED)).value();
 		} catch (InvalidTypeException | ClassNotLoadedException
 				| IncompatibleThreadStateException | InvocationException e) {
 			e.printStackTrace();
@@ -66,12 +67,12 @@ public class JDIStaticMethodCaller {
 			List<Method> methodsByName = type.methodsByName("forName");
 			List<Value> argList = new ArrayList<>();
 			argList.add(vm.mirrorOf(fqcn));
-			type.invokeMethod(thread, methodsByName.get(0), argList, thread.INVOKE_SINGLE_THREADED);
+			type.invokeMethod(thread, methodsByName.get(0), argList, ThreadReference.INVOKE_SINGLE_THREADED);
 			classes = vm.classesByName(fqcn); // クラス名 (完全限定クラス名)
 		}
 		ClassType type = (ClassType)classes.get(0);
 		List<Method> methodsByName = type.methodsByName(methodName);
 		List<Value> argList = Arrays.asList(args); // メソッドに渡す引数のリスト
-		return type.invokeMethod(thread, methodsByName.get(0), argList, thread.INVOKE_SINGLE_THREADED);	// デバッグ中のプログラム内のメソッドを呼び出す
+		return type.invokeMethod(thread, methodsByName.get(0), argList, ThreadReference.INVOKE_SINGLE_THREADED);	// デバッグ中のプログラム内のメソッドを呼び出す
 	}
 }
