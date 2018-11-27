@@ -2,16 +2,17 @@ package org.ntlab.onlineAccessor;
 
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
-import org.eclipse.debug.internal.core.LaunchManager;
+import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.jdt.internal.debug.core.model.JDIDebugTarget;
 
 import com.sun.jdi.VirtualMachine;
 
+@SuppressWarnings("restriction")
 public class JDIDebuggingVirtualMachine {
 
 	public static VirtualMachine getDebuggingVirtualMachine() 
 			throws NotExecutedException, NotSuspendedException, NotDebuggedException {
-		LaunchManager lm = (LaunchManager)DebugPlugin.getDefault().getLaunchManager();
+		ILaunchManager lm = DebugPlugin.getDefault().getLaunchManager();
 		ILaunch[] launches = lm.getLaunches();
 		if (launches.length == 0) {
 			throw new NotExecutedException(); // 一度もJavaプログラムを実行していないとき

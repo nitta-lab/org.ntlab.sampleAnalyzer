@@ -3,9 +3,7 @@ package org.ntlab.sampleanalyzer;
 import java.util.List;
 
 import org.eclipse.jdt.core.Signature;
-import org.eclipse.jdt.core.dom.Message;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -22,13 +20,13 @@ import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.IntegerValue;
 import com.sun.jdi.InvalidTypeException;
 import com.sun.jdi.InvocationException;
-import com.sun.jdi.Location;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.StringReference;
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.VirtualMachine;
 
+@SuppressWarnings("restriction")
 public class SampleAnalyzeAction implements IWorkbenchWindowActionDelegate {
 
 	@Override
@@ -39,7 +37,6 @@ public class SampleAnalyzeAction implements IWorkbenchWindowActionDelegate {
 			for (int i = 0; i < allThreads.size(); i++) {
 				ThreadReference thread = allThreads.get(i);
 				if (thread.isSuspended()) {
-					System.out.println("SampleAnalyzer OK!");
 					countMethodExecutionTest(vm, thread);
 				}
 			}
@@ -72,10 +69,9 @@ public class SampleAnalyzeAction implements IWorkbenchWindowActionDelegate {
 			StringReference threadId = mc.getVm().mirrorOf(String.valueOf(mc.getThreadId()));
 			ObjectReference threadInstance = (ObjectReference)mc.callStaticMethod(SampleAnalyzerLaunchConfiguration.TRACE, "TraceJSON", "getThreadInstance", threadId);
 			ObjectReference roots = (ObjectReference)mc.changeReceiver(threadInstance).callInstanceMethod("getRoot");
-						
+
 			Method method = thread.frame(0).location().method();
 			String targetSignature = createMethodSignature(method);			
-			System.out.println("targetSignature: " + targetSignature);
 			test(vm, thread, roots, targetSignature, SpeedTestType.TARGET); // 一次解析を対象プログラム側で行う
 //			test(vm, thread, roots, targetSignature, SpeedTestType.ANALYZER); // 一次解析をアナライザ側で行う
 		} catch (InvalidTypeException | ClassNotLoadedException
@@ -125,7 +121,6 @@ public class SampleAnalyzeAction implements IWorkbenchWindowActionDelegate {
 			break;
 		}
 		long executionTime = afterTime - beforeTime;
-		System.out.println("Exp " + "(" + type.getTypeName() + ")," + executionTime);
 		StringBuilder result = new StringBuilder();
 		String lineSeparator = System.lineSeparator();
 		String title = "Sample Analyze Result";
