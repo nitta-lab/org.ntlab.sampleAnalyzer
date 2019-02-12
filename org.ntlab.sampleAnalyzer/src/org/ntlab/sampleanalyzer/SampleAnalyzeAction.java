@@ -1,29 +1,39 @@
 package org.ntlab.sampleanalyzer;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.core.Signature;
 import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.IWorkbenchWindowActionDelegate;
 import org.ntlab.onlineAccessor.JDIDebuggingVirtualMachine;
 import org.ntlab.onlineAccessor.JDIInstanceMethodCaller;
+import org.ntlab.onlineAccessor.JDIStaticMethodCaller;
 import org.ntlab.onlineAccessor.NotDebuggedException;
 import org.ntlab.onlineAccessor.NotExecutedException;
 import org.ntlab.onlineAccessor.NotSuspendedException;
 import org.ntlab.sampleanalyzer.analyzerProvider.SampleAnalyzerLaunchConfiguration;
 
 import com.sun.jdi.ClassNotLoadedException;
+import com.sun.jdi.ClassType;
 import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.IntegerValue;
 import com.sun.jdi.InvalidTypeException;
 import com.sun.jdi.InvocationException;
+import com.sun.jdi.LongValue;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.StringReference;
 import com.sun.jdi.ThreadReference;
+import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 
 @SuppressWarnings("restriction")
@@ -37,7 +47,8 @@ public class SampleAnalyzeAction implements IWorkbenchWindowActionDelegate {
 			for (int i = 0; i < allThreads.size(); i++) {
 				ThreadReference thread = allThreads.get(i);
 				if (thread.isSuspended()) {
-					countMethodExecutionTest(vm, thread);
+//					countMethodExecutionTest(vm, thread);
+					countMethodExecutionTracelessTest(vm, thread);
 				}
 			}
 		} catch (NotExecutedException | NotSuspendedException | NotDebuggedException e) {
@@ -132,7 +143,7 @@ public class SampleAnalyzeAction implements IWorkbenchWindowActionDelegate {
 		result.append("time: " + executionTime + " nsec");				result.append(lineSeparator);
 		MessageDialog.openInformation(null, title, result.toString());
 	}
-	
+
 	private int countMethodExecutionInTarget(JDIInstanceMethodCaller mc, String targetSignture, int count, String indent)
 			throws InvalidTypeException, ClassNotLoadedException, InvocationException, IncompatibleThreadStateException {
 		VirtualMachine vm = mc.getVm();
@@ -164,6 +175,73 @@ public class SampleAnalyzeAction implements IWorkbenchWindowActionDelegate {
 			count = countMethodExecutionInAnalyzer(mc.changeReceiver(children), targetSignature, count, indent + "--------");
 		}
 		return count;
+	}
+	
+	private void countMethodExecutionTracelessTest(VirtualMachine vm, ThreadReference suspendedThread) {
+		try {			
+			InputDialog inputDialog = new InputDialog(null, "thread dialog", "Input thread name", "", null);
+			if (inputDialog.open() != InputDialog.OK) return;
+			String threadName = inputDialog.getValue();
+			ThreadReference targetThread = null;
+			for (ThreadReference thread : vm.allThreads()) {
+				if (thread.name().equals(threadName)) {
+					targetThread = thread;
+					break;
+				}
+			}
+			if (targetThread == null) {
+				MessageDialog.openError(null, "error", (threadName + " does not exist"));
+				return;
+			}
+			inputDialog = new InputDialog(null, "method signature dialog", "Input method signature", "", null);
+			if (inputDialog.open() != InputDialog.OK) return;
+			String targetSignature = inputDialog.getValue();
+			
+			testTraceless(vm, suspendedThread, targetThread, targetSignature);
+		} catch (InvalidTypeException | ClassNotLoadedException
+				| InvocationException | IncompatibleThreadStateException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void testTraceless(VirtualMachine vm, ThreadReference suspendedThread,
+			final ThreadReference targetThread, final String targetSignature)
+			throws InvalidTypeException, ClassNotLoadedException, InvocationException, IncompatibleThreadStateException {
+		final JDIInstanceMethodCaller mc = new JDIInstanceMethodCaller(vm, suspendedThread, targetThread);
+		final String threadId = String.valueOf(((LongValue)mc.callInstanceMethod("getId")).value());
+		
+		Job job = new Job("TracelessAnalysis") {
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+				monitor.beginTask("TracelessAnalysis", IProgressMonitor.UNKNOWN);
+				String methodName = "resetStatus";
+				try {
+					mc.callStaticMethod(SampleAnalyzerLaunchConfiguration.ANALYZER_PACKAGE, SampleAnalyzerLaunchConfiguration.ANALYZER_CLASS, methodName);
+					methodName = "countMethodExecuetionTraceless";
+					while (true) {
+						int count = ((IntegerValue)mc.callStaticMethod(SampleAnalyzerLaunchConfiguration.ANALYZER_PACKAGE, SampleAnalyzerLaunchConfiguration.ANALYZER_CLASS, methodName, 
+								vm.mirrorOf(targetSignature), vm.mirrorOf(threadId))).value();
+						StringBuilder message = new StringBuilder();
+						message.append("Thread[" + targetThread.name() + "] ");
+						message.append(targetSignature + ": " + count);
+						monitor.setTaskName(message.toString());
+						if (monitor.isCanceled()) break;
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+				} catch (InvalidTypeException | ClassNotLoadedException
+						| InvocationException | IncompatibleThreadStateException e) {
+					e.printStackTrace();
+				}
+				monitor.done();
+				return Status.CANCEL_STATUS;
+			}
+		};
+		job.setUser(true);
+		job.schedule();
 	}
 
 	private enum SpeedTestType {
