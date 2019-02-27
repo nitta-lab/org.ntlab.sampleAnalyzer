@@ -20,6 +20,7 @@ import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.IntegerValue;
 import com.sun.jdi.InvalidTypeException;
 import com.sun.jdi.InvocationException;
+import com.sun.jdi.LongValue;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.StringReference;
@@ -34,11 +35,20 @@ public class SampleAnalyzeAction implements IWorkbenchWindowActionDelegate {
 		try {
 			VirtualMachine vm = JDIDebuggingVirtualMachine.getDebuggingVirtualMachine();
 			List<ThreadReference> allThreads = vm.allThreads();
+			ThreadReference suspendedThread = null;
+			ThreadReference targetThread = null;
 			for (int i = 0; i < allThreads.size(); i++) {
 				ThreadReference thread = allThreads.get(i);
 				if (thread.isSuspended()) {
-					countMethodExecutionTest(vm, thread);
+					if (thread.name().equals("OnlineAnalysisThread")) {
+						suspendedThread = thread;
+					} else {
+						targetThread = thread;
+					}
 				}
+			}
+			if (suspendedThread != null && targetThread != null) {
+				countMethodExecutionTest(vm, suspendedThread, targetThread);
 			}
 		} catch (NotExecutedException | NotSuspendedException | NotDebuggedException e) {
 			e.printStackTrace();
@@ -62,18 +72,19 @@ public class SampleAnalyzeAction implements IWorkbenchWindowActionDelegate {
 		// TODO Auto-generated method stub
 
 	}
-	
-	private void countMethodExecutionTest(VirtualMachine vm, ThreadReference thread) {
-		JDIInstanceMethodCaller mc = new JDIInstanceMethodCaller(vm, thread, null);
+
+	private void countMethodExecutionTest(VirtualMachine vm, ThreadReference suspendedThread, ThreadReference targetThread) {
+		JDIInstanceMethodCaller mc = new JDIInstanceMethodCaller(vm, suspendedThread, targetThread);
 		try {
-			StringReference threadId = mc.getVm().mirrorOf(String.valueOf(mc.getThreadId()));
+			long id = ((LongValue)mc.callInstanceMethod("getId")).value();
+			StringReference threadId = mc.getVm().mirrorOf(String.valueOf(id));
 			ObjectReference threadInstance = (ObjectReference)mc.callStaticMethod(SampleAnalyzerLaunchConfiguration.TRACE, "TraceJSON", "getThreadInstance", threadId);
 			ObjectReference roots = (ObjectReference)mc.changeReceiver(threadInstance).callInstanceMethod("getRoot");
 
-			Method method = thread.frame(0).location().method();
+			Method method = targetThread.frame(0).location().method();
 			String targetSignature = createMethodSignature(method);			
-			test(vm, thread, roots, targetSignature, SpeedTestType.TARGET); // 一次解析を対象プログラム側で行う
-//			test(vm, thread, roots, targetSignature, SpeedTestType.ANALYZER); // 一次解析をアナライザ側で行う
+			test(vm, suspendedThread, roots, targetSignature, SpeedTestType.TARGET); // 一次解析を対象プログラム側で行う
+//			test(vm, suspendedThread, roots, targetSignature, SpeedTestType.ANALYZER); // 一次解析をアナライザ側で行う
 		} catch (InvalidTypeException | ClassNotLoadedException
 				| InvocationException | IncompatibleThreadStateException e) {
 			e.printStackTrace();
@@ -103,11 +114,11 @@ public class SampleAnalyzeAction implements IWorkbenchWindowActionDelegate {
 		return methodSignature.toString();
 	}
 	
-	private void test(VirtualMachine vm, ThreadReference thread, ObjectReference roots, String targetSignature, SpeedTestType type)
+	private void test(VirtualMachine vm, ThreadReference suspendedThread, ObjectReference roots, String targetSignature, SpeedTestType type)
 			throws InvalidTypeException, ClassNotLoadedException, InvocationException, IncompatibleThreadStateException {
 		int count = 0;
 		long beforeTime = 0, afterTime = 0;
-		JDIInstanceMethodCaller mc = new JDIInstanceMethodCaller(vm, thread, roots);
+		JDIInstanceMethodCaller mc = new JDIInstanceMethodCaller(vm, suspendedThread, roots);
 		switch (type) {
 		case ANALYZER:
 			beforeTime = System.nanoTime();				
